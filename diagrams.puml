@@ -1,0 +1,132 @@
+@startuml Component Diagram
+!theme plain
+skinparam componentStyle rectangle
+
+title Flask Todo App - Component Diagram
+
+package "Frontend" {
+    [Templates] as templates
+    [Static Assets] as static
+    note right of static : CSS styles
+}
+
+package "Backend" {
+    [Flask App] as flask
+    [Routes] as routes
+    [Models] as models
+    database "SQLite DB" as db
+}
+
+package "Infrastructure" {
+    [Nginx] as nginx
+    [Gunicorn] as gunicorn
+}
+
+templates --> flask : HTTP requests
+static --> flask : Serves
+flask --> routes : Handles
+routes --> models : Uses
+models --> db : Persists
+nginx --> gunicorn : Proxy
+gunicorn --> flask : WSGI
+
+@enduml
+
+@startuml Deployment Diagram
+!theme plain
+
+title Flask Todo App - AWS Deployment
+
+node "AWS Cloud" {
+    node "VPC" {
+        node "Public Subnet" {
+            node "EC2 Instance" {
+                component "Nginx" as nginx
+                component "Gunicorn" as gunicorn
+                component "Flask App" as flask
+                database "SQLite" as db
+                
+                nginx --> gunicorn : port 8000
+                gunicorn --> flask
+                flask --> db
+            }
+        }
+    }
+    
+    cloud Internet {
+        [Client Browser]
+    }
+}
+
+[Client Browser] --> nginx : HTTP:80
+
+@enduml
+
+@startuml Sequence Diagram
+!theme plain
+
+title Todo Operation Flow
+
+actor User
+participant "Browser" as browser
+participant "Nginx" as nginx
+participant "Flask App" as flask
+database "SQLite" as db
+
+User -> browser : Add/Edit/Delete Todo
+browser -> nginx : HTTP Request
+nginx -> flask : Forward Request
+flask -> db : Database Operation
+db --> flask : Return Result
+flask --> nginx : HTTP Response
+nginx --> browser : Forward Response
+browser --> User : Update UI
+
+@enduml
+
+@startuml State Diagram
+!theme plain
+
+title Todo Item Lifecycle
+
+[*] --> Created : Add Todo
+Created --> InProgress : Mark as In Progress
+InProgress --> Completed : Mark as Complete
+Completed --> InProgress : Mark as Incomplete
+Created --> [*] : Delete
+InProgress --> [*] : Delete
+Completed --> [*] : Delete
+
+@enduml
+
+@startuml Deployment Flow
+!theme plain
+
+title Deployment Process Flow
+
+start
+
+:Configure AWS Credentials;
+
+:Create SSH Key Pair;
+
+:Deploy CDK Stack;
+note right: Creates VPC, EC2, Security Groups
+
+:EC2 User Data Script;
+
+fork
+    :Install Dependencies;
+fork again
+    :Configure Nginx;
+fork again
+    :Setup Python/Poetry;
+end fork
+
+:Deploy Application;
+
+:Start Gunicorn Service;
+
+stop
+
+@enduml 
