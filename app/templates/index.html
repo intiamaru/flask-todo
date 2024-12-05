@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="todo-container">
+    <form class="add-todo-form" action="{{ url_for('add_todo') }}" method="POST">
+        <input type="text" name="title" placeholder="What needs to be done?" required>
+        <input type="text" name="description" placeholder="Add a description (optional)">
+        <button type="submit">Add Todo</button>
+    </form>
+
+    <div class="todos-list">
+        {% for todo in todos %}
+        <div class="todo-item {% if todo.completed %}completed{% endif %}">
+            <div class="todo-content">
+                <h3>{{ todo.title }}</h3>
+                {% if todo.description %}
+                <p>{{ todo.description }}</p>
+                {% endif %}
+                <span class="date">{{ todo.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+            </div>
+            <div class="todo-actions">
+                <a href="{{ url_for('toggle_todo', todo_id=todo.id) }}" class="btn toggle-btn">
+                    {% if todo.completed %}✓{% else %}○{% endif %}
+                </a>
+                <a href="{{ url_for('delete_todo', todo_id=todo.id) }}" class="btn delete-btn">🗑</a>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p>No todos yet! Add one above to get started.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
