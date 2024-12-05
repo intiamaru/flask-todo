@@ -1,23 +1,32 @@
 #!/bin/bash
 
-# Update system packages
-sudo apt update
-sudo apt upgrade -y
+# Exit on error
+set -e
 
-# Install required packages
-sudo apt install -y python3-pip python3-venv nginx
+# Avoid prompts
+export DEBIAN_FRONTEND=noninteractive
 
-# Install Poetry
-curl -sSL https://install.python-poetry.org | python3 -
+echo "Starting setup..."
 
-# Clone the repository (replace with your repository URL)
-# git clone <your-repo-url>
-# cd flask-todo
+echo "Updating system packages..."
+sudo apt-get update
+sudo apt-get upgrade -y
 
-# Install dependencies
-poetry install
+echo "Installing required packages..."
+sudo apt-get install -y python3-pip python3-venv nginx
 
-# Setup Nginx
+echo "Installing Poetry..."
+curl -sSL https://install.python-poetry.org | POETRY_HOME=/home/ubuntu/.local python3 -
+
+# Add poetry to PATH for this session
+export PATH="/home/ubuntu/.local/bin:$PATH"
+
+echo "Installing project dependencies..."
+poetry config virtualenvs.create true
+poetry config virtualenvs.in-project true
+poetry install --no-interaction
+
+echo "Setting up Nginx..."
 sudo tee /etc/nginx/sites-available/flask-todo << EOF
 server {
     listen 80;
@@ -31,12 +40,12 @@ server {
 }
 EOF
 
-# Enable the Nginx site
-sudo ln -s /etc/nginx/sites-available/flask-todo /etc/nginx/sites-enabled/
-sudo rm /etc/nginx/sites-enabled/default
+echo "Configuring Nginx..."
+sudo ln -sf /etc/nginx/sites-available/flask-todo /etc/nginx/sites-enabled/
+sudo rm -f /etc/nginx/sites-enabled/default
 sudo systemctl restart nginx
 
-# Create systemd service
+echo "Creating systemd service..."
 sudo tee /etc/systemd/system/flask-todo.service << EOF
 [Unit]
 Description=Flask Todo App
@@ -53,6 +62,10 @@ Restart=always
 WantedBy=multi-user.target
 EOF
 
-# Start and enable the service
+echo "Starting and enabling service..."
+sudo systemctl daemon-reload
+sudo systemctl enable flask-todo
 sudo systemctl start flask-todo
-sudo systemctl enable flask-todo 
+
+echo "Setup completed successfully!"
+echo "You can check the service status with: sudo systemctl status flask-todo" 
